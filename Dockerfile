@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.6.0
+ARG VERSION=1.6.1
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
@@ -32,6 +32,32 @@ LABEL maintainer="https://github.com/google/deepvariant/issues"
 
 ARG DV_GPU_BUILD
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+
+
+RUN apt update
+RUN  DEBIAN_FRONTEND=noninteractive  apt install -y apt-utils
+RUN  DEBIAN_FRONTEND=noninteractive  apt install -y wget gnupg build-essential
+ # Use the Intel GPG key from the alternative URL
+
+
+RUN wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+rm GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+echo "deb https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list && \
+apt-get update && \
+DEBIAN_FRONTEND=noninteractive apt-get install -y intel-oneapi-compiler-dpcpp-cpp intel-oneapi-mkl-devel
+
+
+# Set environment variables for Intel compiler and MKL
+ENV CC=icc
+ENV CXX=icpc
+ENV MKLROOT=/opt/intel/oneapi/mkl/latest
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin
+
+# Set the compiler flags to optimize for AVX-512
+ENV CFLAGS="-O3 -xCORE-AVX512 -qopt-zmm-usage=high"
+ENV CXXFLAGS="-O3 -xCORE-AVX512 -qopt-zmm-usage=high"
+
 
 # Copying DeepVariant source code
 COPY . /opt/deepvariant
