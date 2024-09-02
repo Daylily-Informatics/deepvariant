@@ -88,6 +88,11 @@ WORKDIR /opt/
 COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
 
 WORKDIR /opt/deepvariant/bin/
+
+# Set Intel environment variables in the final image
+ENV MKLROOT=/opt/intel/oneapi/mkl/latest
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin
+
 COPY --from=builder /opt/conda /opt/conda
 COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
